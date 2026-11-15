@@ -1,9 +1,18 @@
 <!doctype html>
+<!-- AI disclosure: the code and text of this tool were generated with Claude (Anthropic), a generative AI model. The author chose the challenge, requested the data from NASA FIRMS and checked the results. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Burning activity calendar: NASA FIRMS MODIS and VIIRS fire hotspots harmonised onto one scale, 2003 to 2026, for the Pune-Nashik region.">
+<meta name="generator" content="Claude (Anthropic), a generative AI model">
+<meta name="ai-disclosure" content="AI disclosure: the code and text of this tool were generated with Claude (Anthropic), a generative AI model. The author chose the challenge, requested the data from NASA FIRMS and checked the results.">
 <title>Burning activity calendar</title>
+<meta name="description" content="Burning activity calendar: NASA FIRMS MODIS and VIIRS fire hotspots put on one scale (Pune-Nashik region, 2003-2026).">
+<meta name="generator" content="Written with AI assistance: Claude (Anthropic)">
+<meta name="ai-assistance" content="The page code, the data-processing code and the embedded dataset were generated with AI assistance (Claude, Anthropic). Source data: NASA FIRMS.">
+<!-- AI use statement: this page and the scripts that produced its embedded data were written with AI assistance (Claude, Anthropic). The team chose the challenge and the study area, requested the NASA FIRMS data and reviewed the results. -->
+
 <style>
 :root{
   color-scheme: light dark;
@@ -68,6 +77,7 @@ input[type=number],select{width:100%;margin-top:3px;padding:8px 10px;border:1px 
 .k b{display:block;color:var(--ink);font-size:.9rem}
 @media(max-width:520px){.k{grid-template-columns:repeat(4,1fr)}}
 footer{margin-top:18px;font-size:.82rem;color:var(--muted)}
+footer p{margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -107,6 +117,7 @@ footer{margin-top:18px;font-size:.82rem;color:var(--muted)}
   <section aria-labelledby="h-cal">
     <div class="head">
       <h2 id="h-cal">Calendar</h2>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:.9rem">Usual means <select id="base" style="width:auto;margin:0"><option value="2003">every year 2003–2025</option><option value="2016">the last 10 years (2016–2025)</option></select></label>
       <div class="seg" role="group" aria-label="Calendar colours">
         <button type="button" id="m-count" aria-pressed="true">Hotspots</button>
         <button type="button" id="m-anom" aria-pressed="false">Versus usual</button>
@@ -141,7 +152,7 @@ footer{margin-top:18px;font-size:.82rem;color:var(--muted)}
     <div class="k" id="kk"></div>
   </section>
 
-  <footer id="foot"></footer>
+  <footer><p id="foot"></p><p id="ai">AI use: this page and the code that prepared its data were written with AI assistance (Claude, Anthropic). The team chose the challenge and study area, requested the NASA FIRMS data and reviewed the results.</p></footer>
 </div>
 
 <script>
@@ -171,10 +182,11 @@ const NM=LASTM+1;
 const mlabel=mi=>MON[((mi%12)+12)%12]+' '+(BASEY+Math.floor(mi/12));
 const mlabelF=mi=>MONF[((mi%12)+12)%12]+' '+(BASEY+Math.floor(mi/12));
 const fmt=n=>Math.round(n).toLocaleString('en-IN');
+const hs=n=>Math.round(n)===1?'hotspot':'hotspots';
 
 /* ---------- state ---------- */
 const FULL={la0:LAT0,la1:LAT0+1.8,lo0:LON0,lo1:LON0+2.4};
-let sel={...FULL}, m0=0, m1=LASTM, mode='count', showRaw=false, picked=null;
+let sel={...FULL}, m0=0, m1=LASTM, mode='count', showRaw=false, picked=null, base=2003;
 let H,RAW,MED,RANK,RTOT;
 const $=id=>document.getElementById(id);
 const css=()=>getComputedStyle(document.documentElement);
@@ -190,7 +202,7 @@ function compute(){
   for(let i=0;i<N;i++){ if(!inSel(i))continue; H[MI[i]]+=W[i]; if(SEN[i]===0)RAW[MI[i]]++; }
   MED=new Array(12).fill(0);
   for(let c=0;c<12;c++){
-    const v=[]; for(let y=BASEY;y<=2025;y++){const mi=(y-BASEY)*12+c; if(mi<=LASTC)v.push(H[mi]);}
+    const v=[]; for(let y=base;y<=2025;y++){const mi=(y-BASEY)*12+c; if(mi<=LASTC)v.push(H[mi]);}
     v.sort((a,b)=>a-b); const n=v.length; MED[c]=n? (n%2? v[(n-1)/2] : (v[n/2-1]+v[n/2])/2):0;
   }
   RANK=new Int16Array(NM); RTOT=new Int16Array(12);
@@ -215,14 +227,14 @@ function anomStops(){let mid=cv('--mid'); if(mid[0]!=='#')mid='#EDEFF0';
   return [[0,'#2a5d8f'],[.25,'#8fb3d4'],[.5,mid],[.75,'#f0a35e'],[1,'#b5380f']];}
 function cellColor(mi,vmax){
   if(mode==='count'){ if(H[mi]<=0)return cv('--zero'); return lerp(RAMP,Math.sqrt(H[mi]/vmax)); }
-  const r=ratio(mi); let x= r===Infinity?2 : r<=0?-2 : Math.log2(r);
+  if(Math.max(H[mi],MED[mi%12])<10)return cv('--zero'); const r=ratio(mi); let x= r===Infinity?2 : r<=0?-2 : Math.log2(r);
   return lerp(anomStops(),(Math.max(-2,Math.min(2,x))+2)/4);
 }
 
 /* ---------- text ---------- */
 function describe(mi){
   const c=mi%12, n=H[mi], md=MED[c], p=(mi===LASTM&&lastIsPartial);
-  let s=mlabelF(mi)+': '+fmt(n)+' hotspots'+(p?' so far (data to '+DATA.last+')':'')+'. ';
+  let s=mlabelF(mi)+': '+fmt(n)+' '+hs(n)+(p?' so far (data to '+DATA.last+')':'')+'. ';
   if(md>0){ const r=n/md; s+= (r>=1.25?'That is ':r<=.8?'That is ':'That is ')+(Math.abs(r-1)<.05?'about the same as':r.toFixed(1)+'\u00d7')+' the usual '+MONF[c]+' (median '+fmt(md)+').'; }
   else s+='The usual '+MONF[c]+' has a median of 0.';
   if(!p&&RANK[mi]&&n>0)s+=' Rank '+RANK[mi]+' of '+RTOT[c]+' for '+MONF[c]+'.';
@@ -233,7 +245,7 @@ function summary(){
   let bi=0; for(let mi=0;mi<=LASTC;mi++)if(H[mi]>H[bi])bi=mi;
   const lc=LASTC, md=MED[lc%12], r=md>0?H[lc]/md:null;
   let word=''; if(r!==null) word= r>=1.25?'above': r<=.8?'below':'close to';
-  $('now').innerHTML = '<b>'+mlabelF(lc)+'</b> had <b>'+fmt(H[lc])+'</b> hotspots'+
+  $('now').innerHTML = '<b>'+mlabelF(lc)+'</b> had <b>'+fmt(H[lc])+'</b> '+hs(H[lc])+
      (r!==null? ', '+(Math.abs(r-1)<.05?'about the same as':'<b>'+r.toFixed(1)+'\u00d7</b> the usual') +' '+MONF[lc%12]+' (median '+fmt(md)+') \u2014 '+word+' normal.' : '. A typical '+MONF[lc%12]+' has none.');
   $('peak').textContent = MED[pc]>0 ? 'In this area burning usually peaks in '+MONF[pc]+' (median '+fmt(MED[pc])+' hotspots). The busiest month on record is '+mlabelF(bi)+' with '+fmt(H[bi])+'.' : 'No hotspots in this area for the selected record.';
 }
@@ -262,7 +274,7 @@ function renderCal(){
   const lg=$('legend');
   const stops=(mode==='count'?RAMP:anomStops()).map(s=>lerp(mode==='count'?RAMP:anomStops(),s[0])+' '+(s[0]*100)+'%').join(',');
   const t=mode==='count'?['0',fmt(vmax*.25),fmt(vmax)]:['0.25\u00d7 usual','usual','4\u00d7 usual'];
-  lg.innerHTML='<div class="col"><div class="bar" style="background:linear-gradient(90deg,'+stops+')"></div><div class="ticks"><span>'+t[0]+'</span><span>'+t[1]+'</span><span>'+t[2]+'</span></div></div><div class="cap">'+(mode==='count'?'Hotspots per month':'Compared with the same month in 2003\u20132025')+(lastIsPartial?'. Striped = month in progress.':'')+'</div>';
+  lg.innerHTML='<div class="col"><div class="bar" style="background:linear-gradient(90deg,'+stops+')"></div><div class="ticks"><span>'+t[0]+'</span><span>'+t[1]+'</span><span>'+t[2]+'</span></div></div><div class="cap">'+(mode==='count'?'Hotspots per month':'Compared with the same month in '+base+'\u20132025. Grey = under 10 hotspots, too few to compare')+(lastIsPartial?'. Striped = month in progress.':'')+'</div>';
   if(picked!==null&&picked>=m0&&picked<=m1)$('detail').textContent=describe(picked);
 }
 
@@ -341,6 +353,7 @@ toS.addEventListener('change',()=>{m1=+toS.value; if(m1<m0){m0=m1;fromS.value=m0
 $('m-count').addEventListener('click',()=>{mode='count';$('m-count').setAttribute('aria-pressed','true');$('m-anom').setAttribute('aria-pressed','false');renderCal();});
 $('m-anom').addEventListener('click',()=>{mode='anom';$('m-count').setAttribute('aria-pressed','false');$('m-anom').setAttribute('aria-pressed','true');renderCal();});
 $('raw').addEventListener('change',e=>{showRaw=e.target.checked;renderChart();});
+$('base').addEventListener('change',e=>{base=+e.target.value;refresh();});
 $('rawlbl').textContent='Show unadjusted MODIS (about '+V.k_global.toFixed(0)+'\u00d7 lower)';
 
 /* ---------- downloads ---------- */
@@ -351,7 +364,7 @@ $('dl-hot').addEventListener('click',()=>{
   for(const i of rows){ out.push(new Date(Date.UTC(2000,0,1+DAY[i])).toISOString().slice(0,10)+','+(LAT[i]/1000+LAT0).toFixed(3)+','+(LON[i]/1000+LON0).toFixed(3)+','+SNAME[SEN[i]]+','+(FRP[i]/10).toFixed(1)+','+W[i].toFixed(3)); }
   save('hotspots_selected_area.csv',out.join('\n'));});
 $('dl-mon').addEventListener('click',()=>{
-  const out=['year,month,harmonised_hotspots,median_same_month_2003_2025,ratio_to_median,unadjusted_modis_hotspots,month_in_progress'];
+  const out=['year,month,harmonised_hotspots,median_same_month_'+base+'_2025,ratio_to_median,unadjusted_modis_hotspots,month_in_progress'];
   for(let mi=m0;mi<=m1;mi++){const md=MED[mi%12],r=md>0?(H[mi]/md).toFixed(2):'';
     out.push((BASEY+Math.floor(mi/12))+','+(mi%12+1)+','+H[mi].toFixed(1)+','+md.toFixed(1)+','+r+','+RAW[mi]+','+((mi===LASTM&&lastIsPartial)?'yes':'no'));}
   save('monthly_summary_selected_area.csv',out.join('\n'));});
@@ -363,10 +376,10 @@ $('facts').innerHTML=[
  '<b>Why MODIS needs scaling.</b> VIIRS pixels are 375 m and MODIS pixels are 1 km, so VIIRS sees more and smaller fires. Across the '+V.months+' months when both ran (Feb 2012 to Dec 2025) VIIRS counted about '+V.k_global.toFixed(1)+'\u00d7 as many hotspots.',
  '<b>Joining the records.</b> Before February 2012 each MODIS hotspot counts as the VIIRS-equivalent number for its calendar month (factors below). From February 2012 VIIRS is used as measured: S-NPP until March 2018, then NOAA-20. In 2018\u20132025 NOAA-20 read '+V.n20_ratio.toFixed(3)+'\u00d7 S-NPP, so it is divided by that. S-NPP is no longer delivering new data.',
  '<b>Test.</b> We re-estimated the factors with one year held out, then predicted that year\u2019s VIIRS counts from MODIS alone. Monthly correlation was '+V.corr.toFixed(2)+', yearly totals were off by '+pct(V.annual_err)+'% on average, and Nov\u2013May months by '+pct(V.season_err)+'%.',
- '<b>Limits.</b> Factors were fitted on the whole area and applied to any sub-area. 2000\u20132002 is left out because Aqua only began in July 2002. Hotspots are satellite detections, not burned area or confirmed fires. Late-life changes in MODIS overpass times are not corrected.'
+ '<b>Limits.</b> Factors were fitted on the whole area and applied to any sub-area. 2000\u20132002 is left out because Aqua only began in July 2002. Hotspots are satellite detections, not burned area or confirmed fires. Late-life changes in MODIS overpass times are not corrected. \u201cUsual\u201d is the median of the same calendar month. Counts in 2003\u20132017 are lower than in recent years, so choose the last-10-years option for a stricter comparison.'
 ].map(t=>'<li>'+t+'</li>').join('');
 $('kk').innerHTML=K.map((k,i)=>'<div>'+MON[i]+'<b>'+k.toFixed(1)+'\u00d7</b></div>').join('');
-$('foot').textContent='Data: NASA FIRMS archive and near-real-time hotspots (MODIS C6.1, VIIRS S-NPP and NOAA-20), downloaded 13 Nov 2026, area 73\u201375.4\u00b0E, 18.7\u201320.5\u00b0N, latest observation '+DATA.last+'. Recent months use near-real-time data, which NASA later replaces with standard-quality data and may change slightly.';
+$('foot').textContent='Data: NASA FIRMS archive and near-real-time hotspots (MODIS C6.1, VIIRS S-NPP and NOAA-20), downloaded 13 Nov 2026, area 73\u201375.4\u00b0E, 18.7\u201320.5\u00b0N, latest observation '+DATA.last+'. Recent months use near-real-time data, which NASA later replaces with standard-quality data and may change slightly. AI disclosure: the code and text of this tool were generated with Claude (Anthropic), a generative AI model. The author chose the challenge, requested the data from NASA FIRMS and checked the results.';
 
 /* ---------- run ---------- */
 let pend=false;
